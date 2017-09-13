@@ -418,3 +418,367 @@ select ename,sal from emp where sal > (select max(sal) from emp where empno not 
 | SCOTT | 3000.00 |
 | KING  | 5000.00 |
 | FORD  | 3000.00 |
+
+### 补充：case ... when ... then ... when  ... then ... else ... end 类似于Java中的switch..case
+
+```
+select
+  ename,sal,(case job when 'MANAGER' then sal*1.1 when 'CLERK' then sal*1.5 end) as newsal
+from
+  emp;
+```
+
+| ename  | sal     | newsal  |
+|:--------:|:--------:|:--------:|
+| SMITH  |  800.00 | 1200.00 |
+| ALLEN  | 1600.00 |    NULL |
+| WARD   | 1250.00 |    NULL |
+| JONES  | 2975.00 | 3272.50 |
+| MARTIN | 1250.00 |    NULL |
+| BLAKE  | 2850.00 | 3135.00 |
+| CLARK  | 2450.00 | 2695.00 |
+| SCOTT  | 3000.00 |    NULL |
+| KING   | 5000.00 |    NULL |
+| TURNER | 1500.00 |    NULL |
+| ADAMS  | 1100.00 | 1650.00 |
+| JAMES  |  950.00 | 1425.00 |
+| FORD   | 3000.00 |    NULL |
+| MILLER | 1300.00 | 1950.00 |
+
+```
+select
+  ename,sal,(case job when 'MANAGER' then sal*1.1 when 'CLERK' then sal*1.5 else sal end) as newsal
+from
+  emp;
+```
+
+| ename  | sal     | newsal  |
+|:--------:|:--------:|:--------:|
+| SMITH  |  800.00 | 1200.00 |
+| ALLEN  | 1600.00 | 1600.00 |
+| WARD   | 1250.00 | 1250.00 |
+| JONES  | 2975.00 | 3272.50 |
+| MARTIN | 1250.00 | 1250.00 |
+| BLAKE  | 2850.00 | 3135.00 |
+| CLARK  | 2450.00 | 2695.00 |
+| SCOTT  | 3000.00 | 3000.00 |
+| KING   | 5000.00 | 5000.00 |
+| TURNER | 1500.00 | 1500.00 |
+| ADAMS  | 1100.00 | 1650.00 |
+| JAMES  |  950.00 | 1425.00 |
+| FORD   | 3000.00 | 3000.00 |
+| MILLER | 1300.00 | 1950.00 |
+
+## 9、取得薪水最高的前五名员工
+
+``
+mysql> select ename,sal from emp order by sal desc limit 5;
+``
+
+| ename | sal     |
+|:--------:|:--------:|
+| KING  | 5000.00 |
+| FORD  | 3000.00 |
+| SCOTT | 3000.00 |
+| JONES | 2975.00 |
+| BLAKE | 2850.00 |
+
+## 10、取得薪水最高的第六名到第十名。
+
+``
+mysql> select ename,sal from emp order by sal desc limit 5,5;
+``
+
+| ename  | sal     |
+|:--------:|:--------:|
+| CLARK  | 2450.00 |
+| ALLEN  | 1600.00 |
+| TURNER | 1500.00 |
+| MILLER | 1300.00 |
+| WARD   | 1250.00 |
+
+## 11、取得最后入职的五名员工
+
+``
+mysql> select ename,hiredate from emp order by hiredate desc limit 5;
+``
+
+| ename  | hiredate   |
+|:--------:|:--------:|
+| ADAMS  | 1987-05-23 |
+| SCOTT  | 1987-04-19 |
+| MILLER | 1982-01-23 |
+| JAMES  | 1981-12-03 |
+| FORD   | 1981-12-03 |
+
+## 12、取得每个薪水等级有多少员工
+第一步：找出每个员工的薪水的等级
+
+``
+mysql> select e.ename,e.sal,s.grade from emp e join salgrade s on e.sal between s.losal and s.hisal;
+``
+
+| ename  | sal     | grade |
+|:--------:|:--------:|:--------:|
+| SMITH  |  800.00 |     1 |
+| ALLEN  | 1600.00 |     3 |
+| WARD   | 1250.00 |     2 |
+| JONES  | 2975.00 |     4 |
+| MARTIN | 1250.00 |     2 |
+| BLAKE  | 2850.00 |     4 |
+| CLARK  | 2450.00 |     4 |
+| SCOTT  | 3000.00 |     4 |
+| KING   | 5000.00 |     5 |
+| TURNER | 1500.00 |     3 |
+| ADAMS  | 1100.00 |     1 |
+| JAMES  |  950.00 |     1 |
+| FORD   | 3000.00 |     4 |
+| MILLER | 1300.00 |     2 |
+
+第二步：在以上结果的基础上，按照grade进行分组，count计数
+```
+select
+  s.grade,count(*)
+from
+  emp e
+join
+  salgrade s
+on
+  e.sal between s.losal and s.hisal
+group by
+  s.grade;
+```
+
+| grade | count(*) |
+|:--------:|:--------:|
+|     1 |        3 |
+|     2 |        3 |
+|     3 |        2 |
+|     4 |        5 |
+|     5 |        1 |
+
+## 13、面试题(建议自己动手设计下)
+![](https://i.imgur.com/3vHlqxK.png)
+
+S 学生表
+
+| sno(pk) | sname |
+|:--------:|:--------:|
+|     1 |        张三 |
+|     2 |        李四 |
+|     3 |        王五 |
+|     4 |        赵六 |
+
+
+C 课程表
+
+| cno(pk) | cname | cteacher |
+|:------:|:-------:|:------:|
+|     1 |  linux  | 张老师 |
+|     2 |  MySQL  | 李老师 |
+|     3 |  Git    | 王老师 |
+|     4 |  Java   | 赵老师 |
+|     5 |  Redis   | 黎明 |
+
+SC 学生选课表 <br>
+【sno+cno是复合主键，主键只有一个，同时sno、cno又是外键。外键可以有两个】
+
+| sno | cno | scgrede |
+|:------:|:------:|:-------:|
+|   1   |     1   |   50  |
+|   1   |     2   |   50   |
+|   1   |     3   |   50   |
+|   2   |     2   |   80  |
+|   2   |     3   |   70  |
+|   2   |     4   |    59  |
+|   3   |      1  |    60  |
+|   3   |      2  |    61  |
+|   3   |      3  |    99  |
+|   3   |      4  |   100   |
+|   3   |      5  |   52   |
+|   4   |      3  |   82   |
+|   4   |      4  |   99   |
+|   4   |      5  |   46   |
+
+
+## 1、找出没选过“黎明”老师的所有学生姓名
+第一步：找出黎明老师所授课的编号
+
+``
+select cno from  C where cteacher = '黎明';
+``
+
+| cno |
+|:------:|
+| 5   |
+
+第二步：通过学生选课表查询cno=上面结果的sno，这些sno是选黎明老师课程的学号
+
+``
+select sno from SC where cno = (select cno from  C where cteacher = '黎明');
+``
+
+| sno |
+|:------:|
+| 3   |
+| 4   |
+第三步：在学生表中查询sno not in 上面结果的数据
+
+`select
+  sname
+from
+  S  
+where
+    sno not in (select sno from SC where cno = (select cno from  C where cteacher = '黎明'));
+`
+
+| sname  |
+|:------:|
+| 张三   |
+| 李四   |
+
+## 2、列出2门以上(含2门)不及格学生姓名及平均成绩
+第一步：找出分数小于60并且按sno分组，计数大于2的
+
+```
+select
+  sc.sno
+from
+  SC sc
+where
+  sc.scgrade < 60
+group by
+  sc.sno
+having
+  count(*) >=2;
+```
+
+| sno |
+|:------:|
+| 1   |
+
+第二步：与学生表S进行连接
+
+```
+select
+  sc.sno,s.sname
+from
+  SC sc
+join
+  S s
+on
+  sc.sno=s.sno
+where
+  sc.scgrade < 60
+group by
+    sc.sno,s.sname
+having
+  count(*) >=2;
+```
+
+| sno | sname  |
+|:------:|:----:|
+| 1   | 张三   |
+
+第三步：找出每个学生的平均成绩
+
+`
+select sno,avg(scgrade) as avggrade from SC group by sno;
+`
+
+| sno | avggrade      |
+|:------:|:--------------:|
+| 1   |                50 |
+| 2   | 69.66666666666667 |
+| 3   |              74.4 |
+| 4   | 75.66666666666667 |
+
+第四步：第二步当作临时表t1和第三步当作临时表t2进行联合
+
+`
+select t1.sname,t2.avggrade from t1 join t2 on t1.sno=t2.sno;
+`
+
+```
+select
+  t1.sno,t1.sname,t2.avggrade
+from
+  (select
+    sc.sno,s.sname
+  from
+    SC sc
+  join
+    S s
+  on
+    sc.sno=s.sno
+  where
+    sc.scgrade < 60
+  group by
+      sc.sno,s.sname
+  having
+    count(*) >=2) t1
+join
+  (select sno,avg(scgrade) as avggrade from SC group by sno) t2
+on
+  t1.sno=t2.sno;
+```
+
+| sno | sname  | avggrade |
+|:------:|:------:|:------:|
+| 1   | 张三   |       50 |
+
+
+## 3、即学过1号课又学过2号课所有学生的姓名
+
+第一步：找出学过1号课程的学生
+
+`select sno from SC where cno=1;
+`
+
+| sno |
+|:------:|
+| 1   |
+| 3   |
+
+第二步：找出学过2号课程的学生
+
+`select sno from SC where cno=2;
+`
+
+| sno |
+|:------:|
+| 1   |
+| 2   |
+| 3   |
+
+第三步：将第一步和第二部进行联合
+
+``
+select sno from SC where cno=1 and sno in(select sno from SC where cno=2);
+``
+
+| sno |
+|:------:|
+| 1   |
+| 3   |
+
+
+第四步：将上面结果和S表进行联合
+
+```
+select
+  sc.sno,s.sname
+from
+  SC sc
+join
+  S s
+on
+  sc.sno=s.sno
+where
+  sc.cno=1 and sc.sno in(select sno from SC where cno=2);
+```
+
+| sno | sname  |
+|:------:|:------:|
+| 1   | 张三   |
+| 3   | 王五   |
