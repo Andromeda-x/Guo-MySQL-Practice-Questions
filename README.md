@@ -1,6 +1,4 @@
-# MySQL常用命令总结
-PS：感谢Dean Xu的第一个Start，值得纪念哈。
-
+# MySql常用命令总结
 - 1、使用SHOW语句找出在服务器上当前存在什么数据库：<br>
 mysql> SHOW DATABASES;
 - 2、创建一个数据库MYSQLDATA<br>
