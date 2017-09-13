@@ -1,4 +1,5 @@
-# MySql常用命令总结
+# MySQL常用命令总结
+PS：感谢Dean Xu的第一个Start，值得纪念哈。
 
 - 1、使用SHOW语句找出在服务器上当前存在什么数据库：<br>
 mysql> SHOW DATABASES;
@@ -96,8 +97,9 @@ mysql> select
 | KING  |     10 | 5000.00 |
 | FORD  |     20 | 3000.00 |
 
-# 2、那些人的薪水在部门的平均薪水之上
-第一步：找出部门的平均薪水『按部门编号分组求平均薪水』<br>
+# 2、哪些人的薪水在部门的平均薪水之上
+- 第一步：找出部门的平均薪水『按部门编号分组求平均薪水』<br>
+
 ``
 select deptno,avg(sal) as avgsal from emp group by deptno;
 ``
@@ -108,7 +110,7 @@ select deptno,avg(sal) as avgsal from emp group by deptno;
 |     20 | 2175.000000 |
 |     30 | 1566.666667 |
 
-第二步：将上面的查询结果当作临时表t，与emp e表进行连接<br>
+- 第二步：将上面的查询结果当作临时表t，与emp e表进行连接<br>
 条件：t.deptno=t.deptno and e.sal > t.avgsal
 
 ```
@@ -132,7 +134,7 @@ on
 | FORD  | 3000.00 |     20 | 2175.000000 |
 
 # 3、1取得部门中(所有人)平均薪水的等级
-第一步：取得部门中的平均薪水<br>
+- 第一步：取得部门中的平均薪水<br>
 ``
 select deptno,avg(sal) as avgsal from emp group by deptno;
 ``
@@ -143,7 +145,7 @@ select deptno,avg(sal) as avgsal from emp group by deptno;
 |  20 | 2175.000000 |
 |  30 | 1566.666667 |
 
-第二部：将上面的查询结果当作临时表t，t表和salgrade s表进行关联
+- 第二部：将上面的查询结果当作临时表t，t表和salgrade s表进行关联
 条件：e.sal between s.losal and s.hisal
 
 ```
@@ -163,7 +165,7 @@ on
 |     30 | 1566.666667 |     3 |
 
 # 3、2取得部门中(所有人)薪水的平均等级
-第一步：每个员工的薪水等级(oder by 以部门编号排序，为了好理解)
+- 第一步：每个员工的薪水等级(oder by 以部门编号排序，为了好理解)
 
 ```
 select
@@ -192,7 +194,7 @@ on
 | WARD   | 1250.00 |     30 |     2 |
 | TURNER | 1500.00 |     30 |     3 |
 
-第二步：在以上基础上继续以部门编号分组，求平均薪水等级
+- 第二步：在以上基础上继续以部门编号分组，求平均薪水等级
 
 ```
 select
@@ -213,13 +215,13 @@ group by
 |     30 |     3 |
 
 # 4、不用组函数(MAX),取得最高薪水(给出两种解决方案)
-方案一：按照薪水降序排，取得第一个
+- 方案一：按照薪水降序排，取得第一个
 
 ``
 mysql> select sal from emp order by sal desc limit 1;
 ``
 
-方案二：自连接
+- 方案二：自连接
 
 ``
 mysql>mysql> select sal from emp where sal not in(select a.sal from emp a join emp b on a.sal < b.sal);
@@ -231,7 +233,7 @@ mysql>mysql> select sal from emp where sal not in(select a.sal from emp a join e
 
 # 5、取得平均薪水最高的部门的编号(至少给出两种解决方案)
 
-第一种方案：平均薪水降序排取第一个<br>
+- 第一种方案：平均薪水降序排取第一个<br>
 第一步：取得每个部门的平均薪水
 
 ``
@@ -271,7 +273,7 @@ having
 | :--------:|:--------:|
 |     10 | 2916.666667 |
 
-第二种方案：MAX函数<br>
+- 第二种方案：MAX函数<br>
 
 ```
 select
@@ -307,3 +309,114 @@ having
 | dname      | avgsal      |
 | :--------:|:--------:|
 | ACCOUNTING | 2916.666667 |
+
+# 7、求平均薪水的等级最高的部门的部门名称
+
+第一步：求各个部门平均薪水的等级
+
+```
+select
+  t.dname,t.avgsal,s.grade
+from
+  (select d.dname,avg(e.sal) as avgsal from emp e join dept d on e.deptno=d.deptno group by d.dname) t
+join
+  salgrade s
+on
+  t.avgsal between s.losal and s.hisal;
+```
+
+| dname      | avgsal      | grade |
+| :--------:|:--------:|:--------:|
+| ACCOUNTING | 2916.666667 |     4 |
+| RESEARCH   | 2175.000000 |     4 |
+| SALES      | 1566.666667 |     3 |
+
+第二步：获得最高等级
+
+```
+select
+  max(s.grade)
+from
+  (select avg(sal) as avgsal from emp  group by deptno) t
+join
+  salgrade s
+on
+  t.avgsal between s.losal and s.hisal;
+
+```
+
+第三步：将第一步和第二步联合
+
+```
+select
+  t.dname,t.avgsal,s.grade
+from
+  (select d.dname,avg(e.sal) as avgsal from emp e join dept d on e.deptno=d.deptno group by d.dname) t
+join
+  salgrade s
+on
+  t.avgsal between s.losal and s.hisal
+where
+  s.grade=(select
+            max(s.grade)
+          from
+            (select avg(sal) as avgsal from emp  group by deptno) t
+          join
+            salgrade s
+          on
+            t.avgsal between s.losal and s.hisal);
+```
+
+| dname      | avgsal      | grade |
+| :--------:|:--------:|:--------:|
+| ACCOUNTING | 2916.666667 |     4 |
+| RESEARCH   | 2175.000000 |     4 |
+
+## 8、取得比普通员工的最高薪水还要高的领导人姓名
+
+第一步：取得普通员工<br>
+``
+select * from emp where empno not in (select distinct mgr from emp);
+``
+
+** 以上语句无法查村到结果，因为not in 不会自动忽略NULL，需要自己手动排除NULL。 in 自动忽略NULL**
+
+``
+select * from emp where empno not in (select distinct mgr from emp where mgr is not null);
+``
+
+| empno | ename  | job      | mgr  | hiredate   | sal     | comm    | deptno |
+| :--------:|:--------:|:--------:| :--------:|:--------:|:--------:| :--------:|:--------:|
+|  7369 | SMITH  | CLERK    | 7902 | 1980-12-17 |  800.00 |    NULL |     20 |
+|  7499 | ALLEN  | SALESMAN | 7698 | 1981-02-20 | 1600.00 |  300.00 |     30 |
+|  7521 | WARD   | SALESMAN | 7698 | 1981-02-22 | 1250.00 |  500.00 |     30 |
+|  7654 | MARTIN | SALESMAN | 7698 | 1981-09-28 | 1250.00 | 1400.00 |     30 |
+|  7844 | TURNER | SALESMAN | 7698 | 1981-09-08 | 1500.00 |    0.00 |     30 |
+|  7876 | ADAMS  | CLERK    | 7788 | 1987-05-23 | 1100.00 |    NULL |     20 |
+|  7900 | JAMES  | CLERK    | 7698 | 1981-12-03 |  950.00 |    NULL |     30 |
+|  7934 | MILLER | CLERK    | 7782 | 1982-01-23 | 1300.00 |    NULL |     10 |
+
+第二步：找出员工最高薪水的人
+
+``
+select max(sal) from emp where empno not in (select distinct mgr from emp where mgr is not null);
+``
+
+| max(sal) |
+| :--------:|
+|  1600.00 |
+
+第三步：找出薪水大于1600即可
+
+```
+select ename,sal from emp where sal > (select max(sal) from emp where empno not in (select distinct mgr from emp where mgr is not null));
+```
+
+| ename | sal     |
+|:--------:|:--------:|
+| JONES | 2975.00 |
+| BLAKE | 2850.00 |
+| CLARK | 2450.00 |
+| SCOTT | 3000.00 |
+| KING  | 5000.00 |
+| FORD  | 3000.00 |
