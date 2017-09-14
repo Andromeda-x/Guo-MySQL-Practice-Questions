@@ -785,3 +785,236 @@ where
 | 3   | 王五   |
 
 ## 14、列出所有员工及领导名字
+表的自关联emp a<员工表> emp b <领导表>
+
+```
+select
+  a.ename empname,b.ename leardername
+from
+  emp a
+left join
+  emp b
+on
+  a.mgr=b.empno;
+
+  +---------+-------------+
+| empname | leardername |
++---------+-------------+
+| SMITH   | FORD        |
+| ALLEN   | BLAKE       |
+| WARD    | BLAKE       |
+| JONES   | KING        |
+| MARTIN  | BLAKE       |
+| BLAKE   | KING        |
+| CLARK   | KING        |
+| SCOTT   | JONES       |
+| TURNER  | BLAKE       |
+| ADAMS   | SCOTT       |
+| JAMES   | BLAKE       |
+| FORD    | JONES       |
+| MILLER  | CLARK       |
++---------+-------------+
+13 rows in set (0.06 sec)
+```
+
+## 15、列出受雇日期早于其直接上级领导的所有员工编号，姓名、部门名称
+第一步：表的自关联emp a<员工表> emp b <领导表>找出所有员工
+
+```
+select
+  a.empno '员工编号', a.ename '员工姓名',a.hiredate '员工入职日期',
+  b.empno '领导编号',b.ename '领导姓名',b.hiredate '领导入职日期'
+from
+  emp a
+join
+  emp b
+on
+  a.mgr=b.empno
+where
+  a.hiredate<b.hiredate;
+```
+
+| 员工编号     | 员工姓名     | 员工入职日期       | 领导编号     | 领导姓名     | 领导入职日期       |
+|:------:|:------:|:------:|:------:|:------:|:------:|
+|         7369 | SMITH        | 1980-12-17         |         7902 | FORD         | 1981-12-03         |
+|         7499 | ALLEN        | 1981-02-20         |         7698 | BLAKE        | 1981-05-01         |
+|         7521 | WARD         | 1981-02-22         |         7698 | BLAKE        | 1981-05-01         |
+|         7566 | JONES        | 1981-04-02         |         7839 | KING         | 1981-11-17         |
+|         7698 | BLAKE        | 1981-05-01         |         7839 | KING         | 1981-11-17         |
+|         7782 | CLARK        | 1981-06-09         |         7839 | KING         | 1981-11-17         |
+
+第二步：与dept表进行关联
+
+```
+select
+  a.empno '员工编号', a.ename '员工姓名',a.hiredate '员工入职日期',
+  b.empno '领导编号',b.ename '领导姓名',b.hiredate '领导入职日期',
+  d.dname '部门名称'
+from
+  emp a
+join
+  emp b
+on
+  a.mgr=b.empno
+join
+  dept d
+on
+  a.deptno=d.deptno
+where
+  a.hiredate<b.hiredate;
+```
+
+| 员工编号     | 员工姓名     | 员工入职日期       | 领导编号     | 领导姓名     | 领导入职日期       | 部门名称     |
+|:------:|:------:|:------:|:------:|:------:|:------:|:------:|
+|         7369 | SMITH        | 1980-12-17         |         7902 | FORD         | 1981-12-03         | RESEARCH     |
+|         7499 | ALLEN        | 1981-02-20         |         7698 | BLAKE        | 1981-05-01         | SALES        |
+|         7521 | WARD         | 1981-02-22         |         7698 | BLAKE        | 1981-05-01         | SALES        |
+|         7566 | JONES        | 1981-04-02         |         7839 | KING         | 1981-11-17         | RESEARCH     |
+|         7698 | BLAKE        | 1981-05-01         |         7839 | KING         | 1981-11-17         | SALES        |
+|         7782 | CLARK        | 1981-06-09         |         7839 | KING         | 1981-11-17         | ACCOUNTING   |
+
+## 16、列出部门名称和这些员工信息同时列出那些没有员工的部门
+PS；使用表关联和右外连接emp e <员工表> dept d <部门表>
+
+```
+select
+  e.*,d.dname
+from
+  emp e
+right join
+  dept d
+on
+  e.deptno=d.deptno;
+```
+空间利用，不展示了。
+
+## 17、列出至少有五个员工的部门详细信息
+PS:分组可以使用多个字段联合起来。
+
+```
+select
+  d.deptno,d.dname,d.loc,count(e.ename)
+from
+  emp e
+join
+  dept d
+on
+  e.deptno=d.deptno
+group by
+  d.deptno,d.dname,d.loc
+having
+  count(e.ename)>=5;
+
+  +--------+----------+---------+----------------+
+| deptno | dname    | loc     | count(e.ename) |
++--------+----------+---------+----------------+
+|     20 | RESEARCH | DALLAS  |              5 |
+|     30 | SALES    | CHICAGO |              6 |
++--------+----------+---------+----------------+
+2 rows in set (0.07 sec)
+```
+
+## 18、列出薪金比“SMITH”多的所有员工
+`select * from emp where sal > (select sal from emp where ename='SMITH');
+` <br>
+空间利用，不展示了。
+
+## 19、列出所有“CLERK”(办事员)的姓名及其部门名称，部门人数
+第一步：找出工作是“CLERK”所有员工
+```
+select ename from emp where job='CLERK';
+
++--------+
+| ename  |
++--------+
+| SMITH  |
+| ADAMS  |
+| JAMES  |
+| MILLER |
++--------+
+4 rows in set (0.00 sec)
+```
+
+第二步：进行表关联，得出部门名称
+
+```
+select
+  e.ename,d.dname
+from
+  dept d
+join
+  emp e
+on
+  e.deptno=d.deptno
+where
+  e.job='CLERK';
+
++--------+------------+
+| ename  | dname      |
++--------+------------+
+| SMITH  | RESEARCH   |
+| ADAMS  | RESEARCH   |
+| JAMES  | SALES      |
+| MILLER | ACCOUNTING |
++--------+------------+
+4 rows in set (0.00 sec)
+
+```
+
+第三步：按部门编号分组，求每个部门人数
+
+```
+select deptno,count(*) as totalEmp from emp group by deptno;
+
++--------+----------+
+| deptno | totalEmp |
++--------+----------+
+|     10 |        3 |
+|     20 |        5 |
+|     30 |        6 |
++--------+----------+
+3 rows in set (0.00 sec)
+```
+第四步： 将第二步和第三步(当作临时表t)进行关联
+
+```
+select
+  e.ename,d.dname,t.totalEmp
+from
+  dept d
+join
+  emp e
+on
+  e.deptno=d.deptno
+join
+  (select deptno,count(*) as totalEmp from emp group by deptno)  t
+on
+  t.deptno=d.deptno
+where
+  e.job='CLERK';
+
+  +--------+------------+----------+
+| ename  | dname      | totalEmp |
++--------+------------+----------+
+| SMITH  | RESEARCH   |        5 |
+| ADAMS  | RESEARCH   |        5 |
+| JAMES  | SALES      |        6 |
+| MILLER | ACCOUNTING |        3 |
++--------+------------+----------+
+4 rows in set (0.00 sec)
+```
+
+## 20、列出 最低薪金大于1500的各种工作及从事此工作的全部雇员人数
+
+```
+mysql> select job,min(sal),count(*) as totalEmp from emp group by job having min(sal)>1500;
+
++-----------+----------+----------+
+| job       | min(sal) | totalEmp |
++-----------+----------+----------+
+| ANALYST   |  3000.00 |        2 |
+| MANAGER   |  2450.00 |        3 |
+| PRESIDENT |  5000.00 |        1 |
++-----------+----------+----------+
+3 rows in set (0.00 sec)
+```
