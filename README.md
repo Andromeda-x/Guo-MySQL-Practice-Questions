@@ -164,6 +164,15 @@ on
 |     30 | 1566.666667 |     3 |
 
 # 3、2取得部门中(所有人)薪水的平均等级
+PS：感谢westmelon提出错误，并给出了解决方案。如下：
+
+```
+select
+  t.deptno,avg(t.grade) as avggrade
+from
+  (select e.ename,e.sal,e.deptno,s.grade from emp e join salgrade s on e.sal between s.losal and s.hisal ) t group by t.deptno
+```
+
 - 第一步：每个员工的薪水等级(oder by 以部门编号排序，为了好理解)
 
 ```
@@ -1083,4 +1092,42 @@ where
   | FORD    |     20 | JONES       |     4 |
   +---------+--------+-------------+-------+
   6 rows in set (0.00 sec)
+```
+
+## 23、列出所有与“SCOTT”从事相同工作的所有员工及部门名称
+
+```
+select
+  e.ename,e.job,d.dname
+from
+  emp e
+join
+  dept d
+on
+  e.deptno=d.deptno
+where
+  e.job=(select job from emp where ename='SCOTT') and ename<>'SCOTT';
+
+  +-------+---------+----------+
+| ename | job     | dname    |
++-------+---------+----------+
+| FORD  | ANALYST | RESEARCH |
++-------+---------+----------+
+1 row in set (0.00 sec)
+```
+
+## 24、列出薪金等于部门20中员工薪金的其他员工的姓名和薪金
+第一步：找出30部门中所有员工的薪金，并且去重<br>
+第二步：使用in查找上面结果，并排出30部门的
+
+
+```
+select
+  ename,sal
+from
+  emp
+where
+  sal in (select distinct sal from emp where deptno=30) and deptno<>30;
+
+Empty set (0.00 sec) 数据量不够。
 ```
