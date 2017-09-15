@@ -1018,3 +1018,27 @@ mysql> select job,min(sal),count(*) as totalEmp from emp group by job having min
 +-----------+----------+----------+
 3 rows in set (0.00 sec)
 ```
+
+## 21、列出部门在“SALES”<销售部>工作的姓名，假定不知道销售部的部门的部门编号
+第一步：查处部门编号(30)
+
+`select deptno from dept where dname='SALES';
+ `
+
+第二步：表关联
+
+```
+select ename from emp where deptno=(select deptno from dept where dname='SALES');
+
++--------+
+| ename  |
++--------+
+| ALLEN  |
+| WARD   |
+| MARTIN |
+| BLAKE  |
+| TURNER |
+| JAMES  |
++--------+
+6 rows in set (0.00 sec)
+```
