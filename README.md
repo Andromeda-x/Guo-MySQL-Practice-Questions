@@ -197,7 +197,7 @@ on
 
 ```
 select
-  e.deptno,s.grade
+  e.deptno,avg(s.grade) as avggrade
 from
   emp e
 join
@@ -207,11 +207,11 @@ on
 group by
   e.deptno;
 ```
-| deptno | grade |
+| deptno | avggrade |
 | :--------:|:--------:|
-|     10 |     4 |
-|     20 |     1 |
-|     30 |     3 |
+|     10 |   3.6667 |
+|     20 |   2.8000 |
+|     30 |   2.5000 |
 
 # 4、不用组函数(MAX),取得最高薪水(给出两种解决方案)
 - 方案一：按照薪水降序排，取得第一个
@@ -1041,4 +1041,46 @@ select ename from emp where deptno=(select deptno from dept where dname='SALES')
 | JAMES  |
 +--------+
 6 rows in set (0.00 sec)
+```
+
+## 22、列出薪金高于公司平均薪金的所有员工、所在的部门、上级领导、雇员的工资等级
+emp a <员工表> <br>
+emp b <领导表> <br>
+dept d <部门表> <br>
+salgrade <工资等级表> <br>
+
+第一步：先不考虑公司的平均薪水，表自关联取出后面数据 <br>
+第二步：在后面加where条件<br>
+第三步：在emp b<领导表>上加left。左边表全部显示，因为KING是大BOSS，不能没有他。
+```
+select
+  a.ename empname,d.deptno,b.ename leardername,s.grade
+from
+  emp a
+join
+  dept d
+on
+  a.deptno=d.deptno
+left join
+  emp b
+on
+  a.mgr=b.empno
+join
+  salgrade s
+on
+  a.sal between s.losal and s.hisal
+where
+  a.sal>(select avg(sal) from emp);
+
+  +---------+--------+-------------+-------+
+  | empname | deptno | leardername | grade |
+  +---------+--------+-------------+-------+
+  | JONES   |     20 | KING        |     4 |
+  | BLAKE   |     30 | KING        |     4 |
+  | CLARK   |     10 | KING        |     4 |
+  | SCOTT   |     20 | JONES       |     4 |
+  | KING    |     10 | NULL        |     5 |
+  | FORD    |     20 | JONES       |     4 |
+  +---------+--------+-------------+-------+
+  6 rows in set (0.00 sec)
 ```
