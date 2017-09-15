@@ -1131,3 +1131,384 @@ where
 
 Empty set (0.00 sec) 数据量不够。
 ```
+## 25、列出薪金高于在30部门工作的所有员工的薪金的员工姓名和薪金，部门名称
+第一步：找出30部门最大的薪金<br>
+
+```
+mysql> select max(sal) from emp where deptno=30;
++----------+
+| max(sal) |
++----------+
+|  2850.00 |
++----------+
+1 row in set (0.00 sec)
+```
+
+第二步：员工表和部门表进行关联
+
+```
+select
+  e.ename,e.sal,d.dname
+from
+  emp e
+join
+  dept d
+on
+  e.deptno=d.deptno
+where
+  e.sal>(select max(sal) from emp where deptno=30);
+
+  +-------+---------+------------+
+  | ename | sal     | dname      |
+  +-------+---------+------------+
+  | JONES | 2975.00 | RESEARCH   |
+  | SCOTT | 3000.00 | RESEARCH   |
+  | KING  | 5000.00 | ACCOUNTING |
+  | FORD  | 3000.00 | RESEARCH   |
+  +-------+---------+------------+
+  4 rows in set (0.00 sec)
+```
+
+## 26、列出每个部门工作的员工数量，平均工资、平均服务期限
+第一步：使用右外连接，部门表全部显示。按领导编号分组(部门编号有些为空)，count()计数，求出每个部门的员工数量
+
+```
+select
+  d.deptno,count(e.ename)
+from
+  emp e
+right join
+  dept d
+on
+  e.deptno=d.deptno
+group by
+  d.deptno;
+
+  +--------+----------------+
+| deptno | count(e.ename) |
++--------+----------------+
+|     10 |              3 |
+|     20 |              5 |
+|     30 |              6 |
+|     40 |              0 |
+|     50 |              0 |
+|     60 |              0 |
++--------+----------------+
+6 rows in set (0.01 sec)
+```
+
+第二步：在以上查询结果的基础上，求平均工资。利用ifnull函数处理NULL。
+
+
+```
+select
+  d.deptno '部门编号',count(e.ename) '员工数量',ifnull(avg(sal),0) '平均工资'
+from
+  emp e
+right join
+  dept d
+on
+  e.deptno=d.deptno
+group by
+  d.deptno;
+
+  +--------------+--------------+--------------+
+  | 部门编号     | 员工数量     | 平均工资     |
+  +--------------+--------------+--------------+
+  |           10 |            3 |  2916.666667 |
+  |           20 |            5 |  2175.000000 |
+  |           30 |            6 |  1566.666667 |
+  |           40 |            0 |     0.000000 |
+  |           50 |            0 |     0.000000 |
+  |           60 |            0 |     0.000000 |
+  +--------------+--------------+--------------+
+  6 rows in set (0.00 sec)
+```
+
+第三步：在以上结果的基础上，求平均服务期限。使用ifnull()、to_days()、now()函数。 参考avg(sal),只是把每个员工的服务期限放到avg()函数中<br>
+先求出每个员工的服务年限：
+
+`select (to_days(now()) - to_days(hiredate))/365 from emp;
+`
+
+```
+select
+  d.deptno '部门编号',
+  count(e.ename) '员工数量',
+  ifnull(avg(sal),0) '平均工资',
+  ifnull(avg((to_days(now()) - to_days(hiredate))/365),0) '服务期限'
+from
+  emp e
+right join
+  dept d
+on
+  e.deptno=d.deptno
+group by
+  d.deptno;
+
+  +--------------+--------------+--------------+--------------+
+  |  部门编号     | 员工数量     | 平均工资        | 服务期限     |
+  +--------------+--------------+--------------+--------------+
+  |           10 |            3 |  2916.666667 |  35.93793333 |
+  |           20 |            5 |  2175.000000 |  33.96494000 |
+  |           30 |            6 |  1566.666667 |  36.23651667 |
+  |           40 |            0 |     0.000000 |   0.00000000 |
+  |           50 |            0 |     0.000000 |   0.00000000 |
+  |           60 |            0 |     0.000000 |   0.00000000 |
+  +--------------+--------------+--------------+--------------+
+  6 rows in set (0.01 sec)
+```
+
+## 27、列出所有员工的姓名、部门名称、工资
+
+```
+select
+  e.ename,d.dname,e.sal
+from
+  emp e
+join
+  dept d
+on
+  e.deptno=d.deptno;
+
+  不展示数据了
+```
+
+## 28、列出所有部门的详细信息和人数
+PS:需要使用右外连接，显示全部部门。按部门多个字段分组，并按员工姓名计数。
+
+```
+select
+  d.deptno,d.dname,d.loc,count(e.ename)
+from
+  emp e
+right join
+  dept d
+on
+  e.deptno=d.deptno
+group by
+  d.deptno,d.dname,d.loc;
+
+  +--------+------------+----------+----------------+
+| deptno | dname      | loc      | count(e.ename) |
++--------+------------+----------+----------------+
+|     10 | ACCOUNTING | NEW YORK |              3 |
+|     20 | RESEARCH   | DALLAS   |              5 |
+|     30 | SALES      | CHICAGO  |              6 |
+|     40 | OPERATIONS | BOSTON   |              0 |
+|     50 | HR         | SY       |              0 |
+|     60 | NULL       | MARKET   |              0 |
++--------+------------+----------+----------------+
+6 rows in set (0.00 sec)
+```
+## 29、列出各种工作的最低工资及从事此工作的雇员姓名
+第一步：按工作岗位分组，使用min()函数求工资最小值
+
+```
+select
+  job,min(sal) as minsal
+from
+  emp
+group by
+  job;
+
+  +-----------+---------+
+| job       | minsal  |
++-----------+---------+
+| ANALYST   | 3000.00 |
+| CLERK     |  800.00 |
+| MANAGER   | 2450.00 |
+| PRESIDENT | 5000.00 |
+| SALESMAN  | 1250.00 |
++-----------+---------+
+5 rows in set (0.00 sec)
+```
+
+第二步：将上面的查询结果当作临时表t，
+
+```
+select
+  e.ename,t.*
+from  
+  emp e
+join
+  (select job,min(sal) as minsal from emp group by job) t
+on
+  e.job=t.job and e.sal=t.minsal;
+
+  +--------+-----------+---------+
+| ename  | job       | minsal  |
++--------+-----------+---------+
+| SMITH  | CLERK     |  800.00 |
+| WARD   | SALESMAN  | 1250.00 |
+| MARTIN | SALESMAN  | 1250.00 |
+| CLARK  | MANAGER   | 2450.00 |
+| SCOTT  | ANALYST   | 3000.00 |
+| KING   | PRESIDENT | 5000.00 |
+| FORD   | ANALYST   | 3000.00 |
++--------+-----------+---------+
+7 rows in set (0.00 sec)
+```
+
+## 30、列出各个部门MANAGER的最低薪金
+PS:找出每个部门的MANAGER，并按部门编号分组
+
+```
+select
+  deptno,min(sal) as minsal
+from  
+  emp
+where
+  job='MANAGER'
+group by
+  deptno;
+
+  +--------+---------+
+| deptno | minsal  |
++--------+---------+
+|     10 | 2450.00 |
+|     20 | 2975.00 |
+|     30 | 2850.00 |
++--------+---------+
+3 rows in set (0.00 sec)
+```
+## 31、列出所有员工的年工资，按年薪从低到高排序
+PS：年薪=(工资+佣金)×12，需要判断佣金是否为null
+```
+select
+  ename,((sal+ifnull(comm,0))*12) as yearsal
+from
+  emp
+order by
+  yearsal;
+
+  +--------+----------+
+| ename  | yearsal  |
++--------+----------+
+| SMITH  |  9600.00 |
+| JAMES  | 11400.00 |
+| ADAMS  | 13200.00 |
+| MILLER | 15600.00 |
+| TURNER | 18000.00 |
+| WARD   | 21000.00 |
+| ALLEN  | 22800.00 |
+| CLARK  | 29400.00 |
+| MARTIN | 31800.00 |
+| BLAKE  | 34200.00 |
+| JONES  | 35700.00 |
+| SCOTT  | 36000.00 |
+| FORD   | 36000.00 |
+| KING   | 60000.00 |
++--------+----------+
+14 rows in set (0.00 sec)
+```
+
+## 32、求出员工领导的薪水超过3000的员工姓名和领导名称
+PS：表的自关联，条件是领导的薪水大于3000
+
+```
+select
+  a.ename '员工姓名',a.sal '员工薪水', b.ename '领导姓名',b.sal '领导薪水'
+from
+  emp a
+join
+  emp b
+on
+  a.mgr=b.empno
+where
+  b.sal > 3000;
+
+  +--------------+--------------+--------------+--------------+
+| 员工姓名     | 员工薪水     | 领导姓名     | 领导薪水     |
++--------------+--------------+--------------+--------------+
+| JONES        |      2975.00 | KING         |      5000.00 |
+| BLAKE        |      2850.00 | KING         |      5000.00 |
+| CLARK        |      2450.00 | KING         |      5000.00 |
++--------------+--------------+--------------+--------------+
+3 rows in set (0.00 sec)
+```
+
+## 33、求出部门名称中带“S”字符的部门员工的工资合计，部门人数
+第一步：先找出所有部门的员工，使用右连接，显示全部部门
+
+```
+select
+  e.*,d.*
+from    
+  emp e
+right join
+  dept d
+on
+  e.deptno=d.deptno;
+
+  共17条记录，数据不展示。
+```
+第二步：在以上结果的基础上，按部门编号分组，使用sum()函数求和，count()计数。<r>
+
+```
+select
+   d.deptno '部门编号',d.dname '部门名称',
+   ifnull(sum(e.sal),0) '工资合计',count(e.ename) '部门人数'
+from    
+  emp e
+right join
+  dept d
+on
+  e.deptno=d.deptno
+group by
+  d.deptno;
+
+  +--------------+--------------+--------------+--------------+
+| 部门编号     | 部门名称     | 工资合计     | 部门人数     |
++--------------+--------------+--------------+--------------+
+|           10 | ACCOUNTING   |      8750.00 |            3 |
+|           20 | RESEARCH     |     10875.00 |            5 |
+|           30 | SALES        |      9400.00 |            6 |
+|           40 | OPERATIONS   |         0.00 |            0 |
+|           50 | HR           |         0.00 |            0 |
+|           60 | NULL         |         0.00 |            0 |
++--------------+--------------+--------------+--------------+
+```
+
+第三步：使用like进行模糊查询，并按部门姓名分组
+
+```
+select
+   d.dname '部门名称',
+   ifnull(sum(e.sal),0) '工资合计',count(e.ename) '部门人数'
+from    
+  emp e
+right join
+  dept d
+on
+  e.deptno=d.deptno
+where
+  d.dname like '%S%'
+group by
+  d.dname;
+
+  +--------------+--------------+--------------+
+  | 部门名称     | 工资合计        | 部门人数     |
+  +--------------+--------------+--------------+
+  | OPERATIONS   |         0.00 |            0 |
+  | RESEARCH     |     10875.00 |            5 |
+  | SALES        |      9400.00 |            6 |
+  +--------------+--------------+--------------+
+  3 rows in set (0.00 sec)
+```
+## 34、给认知超过30年的员工加薪10%，
+第一步：创建emp_bak
+
+`create table emp_bak as select * from emp;
+`
+
+第二步：使用(to_days(now())-to_days(hiredate))/35 >30
+
+```
+mysql> update emp_bak set sal=sal*1.1 where (to_days(now()) - to_days(hiredate))/365 >30;
+
+Query OK, 14 rows affected (0.34 sec)
+Rows matched: 14  Changed: 14  Warnings: 0
+```
+
+## 完结，欢迎大家指出错误，补充另外写法。喜欢的话点个Star，或Fork到自己仓库。
