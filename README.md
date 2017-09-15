@@ -1496,7 +1496,7 @@ group by
   +--------------+--------------+--------------+
   3 rows in set (0.00 sec)
 ```
-## 34、给认知超过30年的员工加薪10%，
+## 34、给任职超过30年的员工加薪10%，
 第一步：创建emp_bak
 
 `create table emp_bak as select * from emp;
